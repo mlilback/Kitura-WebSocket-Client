@@ -62,12 +62,14 @@ public class WebSocketClient {
     ///     - uri : The "Request-URI" of the GET method, it is used to identify the endpoint of the WebSocket connection
     ///     - requestKey: The requestKey sent by client which server has to include while building it's response. This helps ensure that the server
     ///                   does not accept connections from non-WebSocket clients
+    ///     - compressionConfig : compression configuration
     ///     - maxFrameSize : Maximum allowable frame size of WebSocket client is configured using this parameter.
     ///                      Default value is `14`.
-    ///     - compressionConfig : compression configuration
+    ///     - enableSSL: if the connection should be opened using TLS/SSL
+    ///     - eventLoopGroup: the NIO event loop group to use. Defaults to creating a single threaded group
 
     public init?(host: String, port: Int, uri: String, requestKey: String,
-                 compressionConfig: WebSocketCompressionConfiguration? = nil, maxFrameSize: Int = 14, enableSSL: Bool = false, onOpen: @escaping (Channel?) -> Void = { _ in }) {
+                 compressionConfig: WebSocketCompressionConfiguration? = nil, maxFrameSize: Int = 14, enableSSL: Bool = false, eventLoopGroup: EventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1), onOpen: @escaping (Channel?) -> Void = { _ in }) {
         self.requestKey = requestKey
         self.host = host
         self.port = port
@@ -76,6 +78,7 @@ public class WebSocketClient {
         self.compressionConfig = compressionConfig
         self.maxFrameSize = maxFrameSize
         self.enableSSL = enableSSL
+        self.group = eventLoopGroup
     }
 
     /// Create a new `WebSocketClient`.
@@ -91,8 +94,9 @@ public class WebSocketClient {
     /// - parameters:
     ///     - url : The "Request-URl" of the GET method, it is used to identify the endpoint of the WebSocket connection
     ///     - compressionConfig : compression configuration
+    ///     - eventLoopGroup: the NIO event loop group to use. Defaults to creating a single threaded group
 
-    public init?(_ url: String, config: WebSocketCompressionConfiguration? = nil) {
+    public init?(_ url: String, config: WebSocketCompressionConfiguration? = nil, eventLoopGroup: EventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)) {
         self.requestKey = "test"
         let rawUrl = URL(string: url)
         self.host = rawUrl?.host ?? "localhost"
@@ -101,9 +105,10 @@ public class WebSocketClient {
         self.compressionConfig = config
         self.maxFrameSize = 24
         self.enableSSL = (rawUrl?.scheme == "wss" || rawUrl?.scheme == "https") ? true : false
+        self.group = eventLoopGroup
     }
 
-    let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    let group: EventLoopGroup
 
     public var delegate: WebSocketClientDelegate? = nil
 
